@@ -1,0 +1,9 @@
+# Amper files
+.editorconfig
+
+# IntelliJ files
+.idea/
+.fleet/
+
+# Build files
+build/
