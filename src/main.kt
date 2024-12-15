@@ -1,36 +1,16 @@
-import io.ktor.client.*
-import io.ktor.client.request.*
-import io.ktor.client.statement.*
-import io.ktor.http.*
+import llm.gemini.Gemini
 
-
+// for testing
 suspend fun generateContent(): String {
 
-    val apiKey = "AIzaSyDyZPPZwHGSRs0N9v9uzloVcHgL5-RxPRU"
+    val apiKey = System.getenv("API_KEY")
 
-    val client = HttpClient()
+    val gemini = Gemini(apiKey)
 
-    val response: HttpResponse = client.post("https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent") {
-        headers {
-            append(HttpHeaders.ContentType, ContentType.Application.Json.toString())
-        }
-        parameter("key", apiKey)
-        setBody("""
-            {
-              "contents": [
-                {
-                  "parts": [
-                    {"text": "Explain how AI works"}
-                  ]
-                }
-              ]
-            }
-        """.trimIndent())
-    }
+    gemini.addUserMessage("Explain how AI works")
 
-    val responseBody = response.bodyAsText()
-    client.close() // Make sure to close the client after use
-    return responseBody
+    return gemini.sendMessage()
+
 }
 
 suspend fun main() {
