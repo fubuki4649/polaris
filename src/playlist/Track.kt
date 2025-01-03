@@ -1,6 +1,6 @@
 package playlist
 
-data class Track(val path: String) {
+class Track(val path: String) {
 
     var videoName: String
     var channelName: String
@@ -13,8 +13,16 @@ data class Track(val path: String) {
         videoName = splitPath.last()
     }
 
-    data class Metadata(
+    inner class Metadata(
         var title: String = ""
-    )
+    ) {
+
+        fun populate() {
+
+            
+
+        }
+
+    }
 
 }
