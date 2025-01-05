@@ -13,16 +13,10 @@ class Track(val path: String) {
         videoName = splitPath.last()
     }
 
-    inner class Metadata(
-        var title: String = ""
-    ) {
-
-        fun populate() {
-
-            
-
-        }
-
-    }
+    data class Metadata(
+        var title: String = "",
+        var artists: List<String> = emptyList(),
+        var isCover: Boolean = false,
+    )
 
 }

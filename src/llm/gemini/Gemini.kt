@@ -1,8 +1,9 @@
 package llm.gemini
 
+import global.geminiApiKey
+import global.geminiApiLink
 import io.ktor.client.*
 import io.ktor.client.request.*
-import io.ktor.client.request.headers
 import io.ktor.client.statement.*
 import io.ktor.http.*
 import kotlinx.serialization.encodeToString
@@ -10,9 +11,7 @@ import kotlinx.serialization.json.Json
 import llm.LanguageModel
 import llm.LanguageModel.Role
 
-class Gemini(override val apiKey: String, model: String = "gemini-2.0-flash-exp") : LanguageModel {
-
-    val url = "https://generativelanguage.googleapis.com/v1beta/models/$model:generateContent"
+class Gemini(override val apiKey: String = geminiApiKey, override val apiLink: String = geminiApiLink) : LanguageModel {
 
     private val contentsContainer = ContentsContainer()
 
@@ -24,7 +23,6 @@ class Gemini(override val apiKey: String, model: String = "gemini-2.0-flash-exp"
         contentsContainer.last().parts.add(part)
 
     }
-
 
     // Public methods
 
@@ -40,7 +38,7 @@ class Gemini(override val apiKey: String, model: String = "gemini-2.0-flash-exp"
 
         val client = HttpClient()
 
-        val response: HttpResponse = client.post(url) {
+        val response: HttpResponse = client.post(this.apiLink) {
             headers {
                 append(HttpHeaders.ContentType, ContentType.Application.Json)
             }

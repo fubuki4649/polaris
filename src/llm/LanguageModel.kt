@@ -7,6 +7,7 @@ interface LanguageModel {
     }
 
     val apiKey: String
+    val apiLink: String
 
     suspend fun addSystemMessage(msg: String)
 
