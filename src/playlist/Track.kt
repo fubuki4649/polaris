@@ -1,11 +1,13 @@
 package playlist
 
+import kotlinx.serialization.Serializable
+
 class Track(val path: String) {
 
     var videoName: String
     var channelName: String
     var thumbnailPath: String? = null
-    val metadata: Metadata = Metadata()
+    lateinit var metadata: Metadata
 
     init {
         val splitPath = path.split("<DELIMITER/>")
@@ -13,10 +15,11 @@ class Track(val path: String) {
         videoName = splitPath.last()
     }
 
+    @Serializable
     data class Metadata(
-        var title: String = "",
-        var artists: List<String> = emptyList(),
-        var isCover: Boolean = false,
+        val title: String = "",
+        val artists: List<String> = emptyList(),
+        val isCover: Boolean = false,
     )
 
 }

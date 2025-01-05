@@ -23,16 +23,19 @@ class SongMetadataGetter {
 
             val userPrompt: StringBuilder = StringBuilder(userPromptPrefix)
 
+            // Add each video title to user prompt
             tracks.forEach {
                 userPrompt.append(it + "\n")
             }
 
+            // Set user prompt and send query
             var retVal: String
             runBlocking {
                 llm.addUserMessage(userPrompt.toString())
                 retVal = llm.sendMessage()
             }
 
+            // Return result
             return retVal
 
         }

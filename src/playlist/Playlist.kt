@@ -1,6 +1,7 @@
 package playlist
 
 import global.SongMetadataGetter
+import kotlinx.serialization.json.Json
 import kotlin.io.path.*
 
 class Playlist(playlistLink: String, private val workPath: String = "~/.cache/polaris", overwrite: Boolean = false) {
@@ -30,12 +31,14 @@ class Playlist(playlistLink: String, private val workPath: String = "~/.cache/po
     @OptIn(ExperimentalPathApi::class)
     fun download() {
 
+        // Run yt-dlp
         ProcessBuilder(ytDlpCommand.split(" "))
             .redirectOutput(ProcessBuilder.Redirect.INHERIT)
             .redirectError(ProcessBuilder.Redirect.INHERIT)
             .start()
             .waitFor()
 
+        // populate `tracks: MutableList<Track>`
         val audioPath = Path("$workPath/audio")
         audioPath.walk().forEach {
             tracks.add(Track(it.fileName.toString()))
@@ -45,9 +48,15 @@ class Playlist(playlistLink: String, private val workPath: String = "~/.cache/po
 
     fun populateMetadata() {
 
+        // Get the LLM response as json
         val json = SongMetadataGetter.getMetadata(tracks.map {
             it.videoName
         })
+
+        // Deserialize json and set metadata for each track
+        Json.decodeFromString<List<Track.Metadata>>(json).mapIndexed { index, metadata ->
+            tracks[index].metadata = metadata
+        }
 
     }
 
