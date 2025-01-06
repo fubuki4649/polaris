@@ -3,7 +3,7 @@ import llm.gemini.Gemini
 // for testing
 suspend fun generateContent(): String {
 
-    val apiKey = System.getenv("API_KEY") ?: ""
+    val apiKey = System.getenv("GEMINI_API_KEY") ?: ""
 
     val gemini = Gemini(apiKey)
 
