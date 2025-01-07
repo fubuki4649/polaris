@@ -13,7 +13,7 @@ data class Part(
 
 @Serializable
 data class Content(
-    @Transient val role: Role = Role.ASSISTANT,
+    @Transient val role: Role = Role.USER,
     @SerialName("parts") val parts: MutableList<Part> = ArrayList()
 ) : MutableList<Part> by parts
 
