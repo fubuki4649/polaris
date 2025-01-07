@@ -6,7 +6,7 @@ import kotlin.io.path.*
 
 class Playlist(playlistLink: String, private val workPath: String = "~/.cache/polaris", overwrite: Boolean = false) {
 
-    private val ytDlpCommand = "yt-dlp -f bestaudio/best --extract-audio --audio-format aac --audio-quality 0 -o \"%(uploader)s <DELIMITER> %(title)s\" --no-playlist --paths $workPath/audio '$playlistLink'"
+    private val ytDlpCommand = "yt-dlp -f bestaudio/best --extract-audio --audio-format aac --audio-quality 0 -o \"%(uploader)s<DELIMITER>%(title)s\" --no-playlist --paths $workPath/audio $playlistLink"
 
     val tracks: MutableList<Track> = mutableListOf()
 
@@ -48,7 +48,7 @@ class Playlist(playlistLink: String, private val workPath: String = "~/.cache/po
 
     fun populateMetadata() {
 
-        // Get the LLM response as json
+        // Send an LLM query and get the response as json
         val json = SongMetadataGetter.getMetadata(tracks.map {
             it.videoName
         })
@@ -57,6 +57,9 @@ class Playlist(playlistLink: String, private val workPath: String = "~/.cache/po
         Json.decodeFromString<List<Track.Metadata>>(json).mapIndexed { index, metadata ->
             tracks[index].metadata = metadata
         }
+
+        // Write Metadata to file
+        tracks.forEach { it.writeMetadata() }
 
     }
 

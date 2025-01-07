@@ -2,6 +2,7 @@ package llm.gemini
 
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
+import kotlinx.serialization.Transient
 import llm.LanguageModel.Role
 
 
@@ -12,7 +13,7 @@ data class Part(
 
 @Serializable
 data class Content(
-    @Transient val role: Role,
+    @Transient val role: Role = Role.ASSISTANT,
     @SerialName("parts") val parts: MutableList<Part> = ArrayList()
 ) : MutableList<Part> by parts
 

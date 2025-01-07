@@ -1,22 +1,20 @@
 import llm.gemini.Gemini
+import playlist.Playlist
 
 // for testing
-suspend fun generateContent(): String {
+fun getPlaylist() {
 
-    val apiKey = System.getenv("GEMINI_API_KEY") ?: ""
+    val playlist = Playlist("https://www.youtube.com/playlist?list=PLa51LDiG3SvwXqmlmniEhkeHMNDlRltrJ", "~/test")
 
-    val gemini = Gemini(apiKey)
-
-    gemini.addUserMessage("Explain how AI works")
-
-    return gemini.sendMessage()
+    playlist.download()
+    playlist.populateMetadata()
 
 }
 
-suspend fun main() {
+fun main() {
 
 
-    println(generateContent())
+    getPlaylist()
 
 
 }
