@@ -2,8 +2,6 @@ package llm.gemini
 
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
-import kotlinx.serialization.Transient
-import llm.LanguageModel.Role
 
 
 @Serializable
@@ -13,9 +11,15 @@ data class Part(
 
 @Serializable
 data class Content(
-    @Transient val role: Role = Role.USER,
+    @SerialName("role") val role: Role = Role.USER,
     @SerialName("parts") val parts: MutableList<Part> = ArrayList()
-) : MutableList<Part> by parts
+) : MutableList<Part> by parts {
+    @Serializable
+    enum class Role {
+        @SerialName("model") MODEL,
+        @SerialName("user") USER
+    }
+}
 
 @Serializable
 data class ContentsContainer(

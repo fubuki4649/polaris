@@ -2,10 +2,6 @@ package llm
 
 interface LanguageModel {
 
-    enum class Role {
-        SYSTEM, USER, ASSISTANT
-    }
-
     val apiKey: String
     val apiLink: String
 
@@ -14,5 +10,7 @@ interface LanguageModel {
     suspend fun addUserMessage(msg: String)
 
     suspend fun sendMessage(): String
+
+    override fun toString(): String
 
 }

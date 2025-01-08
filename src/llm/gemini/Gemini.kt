@@ -9,7 +9,8 @@ import io.ktor.http.*
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 import llm.LanguageModel
-import llm.LanguageModel.Role
+import llm.gemini.Content.Role
+
 
 class Gemini(override val apiKey: String = geminiApiKey, override val apiLink: String = geminiApiLink) : LanguageModel {
 
@@ -27,7 +28,7 @@ class Gemini(override val apiKey: String = geminiApiKey, override val apiLink: S
     // Public methods
 
     override suspend fun addSystemMessage(msg: String) {
-        addPart(Part(msg), Role.SYSTEM)
+        addPart(Part(msg), Role.USER)
     }
 
     override suspend fun addUserMessage(msg: String) {
@@ -48,7 +49,19 @@ class Gemini(override val apiKey: String = geminiApiKey, override val apiLink: S
 
         val responseBody = response.bodyAsText()
         client.close()
+
+        contentsContainer.add(Content())
+
+        // TODO: Add response body as text back into ContentsContainer
+        println(responseBody)
         return responseBody
+
+    }
+
+    override fun toString(): String {
+
+        val json = Json { prettyPrint = true }
+        return json.encodeToString(contentsContainer)
 
     }
 
