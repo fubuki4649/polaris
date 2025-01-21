@@ -49,7 +49,7 @@ class Playlist(playlistLink: String, private val workPath: String = "${System.ge
         // Populate `tracks: MutableList<Track>`
         val audioPath = Path("$workPath/audio")
         audioPath.walk().forEach {
-            tracks.add(Track(it.fileName.toString()))
+            tracks.add(Track(it.toString()))
         }
 
     }
