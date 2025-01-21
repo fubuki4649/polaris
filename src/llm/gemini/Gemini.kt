@@ -53,7 +53,6 @@ class Gemini(override val apiKey: String = geminiApiKey, override val apiLink: S
         contentsContainer.add(Content())
 
         // TODO: Add response body as text back into ContentsContainer
-        println(responseBody)
         return responseBody
 
     }

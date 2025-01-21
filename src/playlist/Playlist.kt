@@ -3,6 +3,7 @@ package playlist
 import global.SongMetadataGetter
 import kotlinx.serialization.json.Json
 import kotlin.io.path.*
+import java.util.regex.Pattern
 
 class Playlist(playlistLink: String, private val workPath: String = "${System.getProperty("user.home")}/.cache/polaris", overwrite: Boolean = false) {
 
@@ -27,6 +28,13 @@ class Playlist(playlistLink: String, private val workPath: String = "${System.ge
 
     }
 
+    /// Extracts JSON data from LLM response
+    private fun extractJsonContent(text: String): String {
+        val pattern = Pattern.compile("```json(.*?)```", Pattern.DOTALL)
+        val matcher = pattern.matcher(text)
+        return if (matcher.find())  matcher.group(1) else ""
+    }
+
     /// Download playlist songs from YouTube
     @OptIn(ExperimentalPathApi::class)
     fun download() {
@@ -38,7 +46,7 @@ class Playlist(playlistLink: String, private val workPath: String = "${System.ge
             .start()
             .waitFor()
 
-        // populate `tracks: MutableList<Track>`
+        // Populate `tracks: MutableList<Track>`
         val audioPath = Path("$workPath/audio")
         audioPath.walk().forEach {
             tracks.add(Track(it.fileName.toString()))
@@ -49,12 +57,14 @@ class Playlist(playlistLink: String, private val workPath: String = "${System.ge
     fun populateMetadata() {
 
         // Send an LLM query and get the response as json
-        val json = SongMetadataGetter.getMetadata(tracks.map {
+        val jsonRawResponse = SongMetadataGetter.getMetadata(tracks.map {
             it.videoName
         })
 
+        val jsonData = extractJsonContent(jsonRawResponse).replace("\\n", "\n").replace("\\\"", "\"")
+
         // Deserialize json and set metadata for each track
-        Json.decodeFromString<List<Track.Metadata>>(json).mapIndexed { index, metadata ->
+        Json.decodeFromString<List<Track.Metadata>>(jsonData).mapIndexed { index, metadata ->
             tracks[index].metadata = metadata
         }
 
