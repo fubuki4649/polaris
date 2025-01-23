@@ -1,5 +1,4 @@
 import global.extractResource
-import kotlinx.io.files.FileNotFoundException
 import playlist.Playlist
 
 // for testing
@@ -14,7 +13,7 @@ fun getPlaylist() {
 
 fun main() {
 
-    val p = extractResource("/test.py").absolutePath
+    val p = extractResource("/sync_ipod.py").absolutePath
 
     ProcessBuilder(("python3 $p").split(" "))
         .redirectOutput(ProcessBuilder.Redirect.INHERIT)
