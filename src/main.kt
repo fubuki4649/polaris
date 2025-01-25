@@ -28,7 +28,7 @@ class Polaris: Callable<Int> {
 
     override fun call(): Int {
 
-        val playlist = Playlist(youtubeLink, outputPath)
+        val playlist = Playlist(youtubeLink, outputPath, overwrite, verbose)
 
         playlist.download()
         playlist.populateMetadata()

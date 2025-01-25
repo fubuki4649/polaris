@@ -5,15 +5,13 @@ import kotlin.reflect.KClass
 
 enum class LanguageModel(
     val modelType: KClass<out llm.LanguageModel>,
-    val apiKey: String,
-    val apiLink: String,
     val sysPrompt: String,
     val userPromptPrefix: String,
 ) {
-    GEMINI(Gemini::class, geminiApiKey, geminiApiLink, geminiSystemPrompt, geminiUserPromptPrefix),
+    GEMINI(Gemini::class, geminiSystemPrompt, geminiUserPromptPrefix),
 }
 
-// Indicated which LLM to use
+// Indicate which LLM to use
 var languageModel: LanguageModel = LanguageModel.GEMINI
 
 
