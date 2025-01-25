@@ -10,7 +10,7 @@ class Track(val path: String) {
 
     var videoName: String
     var channelName: String
-    var thumbnailPath: String? = null
+    var albumCoverPath: String? = null
     lateinit var metadata: Metadata
 
     init {
@@ -28,7 +28,6 @@ class Track(val path: String) {
 
     fun writeMetadata() {
 
-        println(path)
         if(!File(path).exists()) println("file doesnt exist")
         val audioFile = AudioFileIO.read(File(path))
         val tag = audioFile.tagOrCreateDefault as Mp4Tag

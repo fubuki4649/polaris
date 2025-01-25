@@ -1,7 +1,5 @@
 import picocli.CommandLine
-import picocli.CommandLine.Command
-import picocli.CommandLine.Option
-import picocli.CommandLine.Parameters
+import picocli.CommandLine.*
 import playlist.Playlist
 import java.util.concurrent.Callable
 import kotlin.system.exitProcess
@@ -28,10 +26,14 @@ class Polaris: Callable<Int> {
 
     override fun call(): Int {
 
-        val playlist = Playlist(youtubeLink, outputPath, overwrite, verbose)
+        // Set logging mode for SLF4J (used by ktor)
+        System.setProperty("org.slf4j.simpleLogger.defaultLogLevel", if(verbose) "DEBUG" else "WARN")
 
-        playlist.download()
-        playlist.populateMetadata()
+        // Get playlist and metadata
+        val playlist = Playlist(youtubeLink, outputPath, overwrite)
+
+        playlist.download(verbose)
+        playlist.populateMetadata(verbose)
 
         return 0
 

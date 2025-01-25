@@ -6,6 +6,7 @@ dependencies:
   - net.jthink:jaudiotagger:3.0.1
   - info.picocli:picocli:4.7.6
   - info.picocli:picocli-codegen:4.7.6
+  - org.slf4j:slf4j-simple:2.0.16
 
 settings:
   kotlin:

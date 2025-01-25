@@ -2,14 +2,16 @@ package playlist
 
 import global.SongMetadataGetter
 import kotlinx.serialization.json.Json
+import java.util.logging.Level
+import java.util.logging.Logger
 import kotlin.io.path.*
 import java.util.regex.Pattern
 
-class Playlist(playlistLink: String, private val workPath: String = "${System.getProperty("user.home")}/.cache/polaris", overwrite: Boolean = false, verbose: Boolean = true) {
+class Playlist(private val playlistLink: String, private val workPath: String = "${System.getProperty("user.home")}/.cache/polaris", overwrite: Boolean = false) {
 
-    private val ytDlpCommand = "yt-dlp -f bestaudio/best --extract-audio --audio-format aac --audio-quality 0 -o %(uploader)s<DELIMITER>%(title)s --no-playlist --paths $workPath/audio $playlistLink"
+    private val ytDlpCommand = "yt-dlp --quiet -f bestaudio/best --extract-audio --audio-format aac --audio-quality 0 -o %(uploader)s<DELIMITER>%(title)s --no-playlist --paths $workPath/audio $playlistLink"
 
-    val tracks: MutableList<Track> = mutableListOf()
+    private val tracks: MutableList<Track> = mutableListOf()
 
     init {
 
@@ -21,6 +23,7 @@ class Playlist(playlistLink: String, private val workPath: String = "${System.ge
                 if((readlnOrNull()?.getOrNull(0)?.lowercaseChar() ?: 'y') == 'n') throw Exception("Directory already exists.")
             }
 
+            println("Deleting non-empty directory $workPath")
             @OptIn(ExperimentalPathApi::class)
             Path(workPath).deleteRecursively()
 
@@ -37,12 +40,16 @@ class Playlist(playlistLink: String, private val workPath: String = "${System.ge
 
     /// Download playlist songs from YouTube
     @OptIn(ExperimentalPathApi::class)
-    fun download() {
+    fun download(verbose: Boolean = true) {
+
+        println("Downloading contents from $playlistLink")
+        println("Any unavailable tracks will be skipped, use --verbose to see more")
 
         // Run yt-dlp
+        val destination = if(verbose) ProcessBuilder.Redirect.INHERIT else ProcessBuilder.Redirect.DISCARD
         ProcessBuilder(ytDlpCommand.split(" "))
-            .redirectOutput(ProcessBuilder.Redirect.INHERIT)
-            .redirectError(ProcessBuilder.Redirect.INHERIT)
+            .redirectOutput(destination)
+            .redirectError(destination)
             .start()
             .waitFor()
 
@@ -52,24 +59,39 @@ class Playlist(playlistLink: String, private val workPath: String = "${System.ge
             tracks.add(Track(it.toString()))
         }
 
+        println("Finished downloading $playlistLink")
+
     }
 
-    fun populateMetadata() {
+    fun populateMetadata(verbose: Boolean = true) {
+
+        println("Getting metadata for $playlistLink from ${global.languageModel}")
 
         // Send an LLM query and get the response as json
         val jsonRawResponse = SongMetadataGetter.getMetadata(tracks.map {
             it.videoName
         })
 
+        println("Parsing JSON response from ${global.languageModel}${if(verbose)":" else ""}")
+
+        // Isolate only the json content from the LLM response
         val jsonData = extractJsonContent(jsonRawResponse).replace("\\n", "\n").replace("\\\"", "\"")
+        if(verbose) println(jsonData)
 
         // Deserialize json and set metadata for each track
         Json.decodeFromString<List<Track.Metadata>>(jsonData).mapIndexed { index, metadata ->
             tracks[index].metadata = metadata
         }
 
+        println("Writing metadata to file")
+
+        // Set logging for jaudiotagger
+        Logger.getLogger("org.jaudiotagger").level = if(verbose) Level.CONFIG else Level.OFF
+
         // Write Metadata to file
         tracks.forEach { it.writeMetadata() }
+
+        println("Finished populating metadata")
 
     }
 
