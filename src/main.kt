@@ -1,24 +1,46 @@
-import global.extractResource
+import picocli.CommandLine
+import picocli.CommandLine.Command
+import picocli.CommandLine.Option
+import picocli.CommandLine.Parameters
 import playlist.Playlist
+import java.util.concurrent.Callable
+import kotlin.system.exitProcess
 
-// for testing
-fun getPlaylist() {
+@Command(
+    name = "polaris",
+    mixinStandardHelpOptions = true,
+    description = ["A CLI tool (for now) for automatic downloading and tagging YouTube music playlists"],
+    version = ["0.1.0-dev"],
+)
+class Polaris: Callable<Int> {
 
-    val playlist = Playlist("https://www.youtube.com/playlist?list=PLa51LDiG3SvwXqmlmniEhkeHMNDlRltrJ", "/home/kaneki/test")
+    @Option(names = ["-o", "--overwrite"], description = ["Overwrite existing files"])
+    var overwrite: Boolean = false
 
-    playlist.download()
-    playlist.populateMetadata()
+    @Option(names = ["-v", "--verbose"], description = ["Enable verbose output"])
+    var verbose: Boolean = false
+
+    @Parameters(index = "0", description = ["YouTube link for the playlist"], arity = "1")
+    lateinit var youtubeLink: String
+
+    @Parameters(index = "1", description = ["Output path to place the music"], arity = "1")
+    lateinit var outputPath: String
+
+    override fun call(): Int {
+
+        val playlist = Playlist(youtubeLink, outputPath)
+
+        playlist.download()
+        playlist.populateMetadata()
+
+        return 0
+
+    }
 
 }
 
-fun main() {
+fun main(args: Array<String>) {
 
-    val p = extractResource("/sync_ipod.py").absolutePath
-
-    ProcessBuilder(("python3 $p").split(" "))
-        .redirectOutput(ProcessBuilder.Redirect.INHERIT)
-        .redirectError(ProcessBuilder.Redirect.INHERIT)
-        .start()
-        .waitFor()
+    exitProcess(CommandLine(Polaris()).execute(*args))
 
 }
