@@ -76,7 +76,11 @@ class Playlist(private val playlistLink: String, private val workPath: String = 
 
         // Isolate only the json content from the LLM response
         val jsonData = extractJsonContent(jsonRawResponse).replace("\\n", "\n").replace("\\\"", "\"")
-        if(verbose) println(jsonData)
+
+        // Log LLM response
+        if(verbose) {
+            if(jsonData.isNotBlank()) println(jsonData) else println(jsonRawResponse)
+        }
 
         // Deserialize json and set metadata for each track
         Json.decodeFromString<List<Track.Metadata>>(jsonData).mapIndexed { index, metadata ->
