@@ -7,7 +7,7 @@ import io.ktor.client.request.*
 import io.ktor.client.statement.*
 import io.ktor.http.*
 import kotlinx.serialization.encodeToString
-import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.*
 import llm.LanguageModel
 import llm.gemini.Content.Role
 
@@ -19,10 +19,8 @@ class Gemini(override val apiKey: String = geminiApiKey, override val apiLink: S
     // Private methods
 
     private fun addPart(part: Part, role: Role) {
-
         if(contentsContainer.lastOrNull()?.role != role) contentsContainer.add(Content(role))
         contentsContainer.last().parts.add(part)
-
     }
 
     // Public methods
@@ -47,13 +45,27 @@ class Gemini(override val apiKey: String = geminiApiKey, override val apiLink: S
             setBody(Json.encodeToString(contentsContainer))
         }
 
-        val responseBody = response.bodyAsText()
+        val rawResponse = response.bodyAsText()
         client.close()
 
-        contentsContainer.add(Content())
+        // Extract the "PARTS" from the response
+        val partsList = mutableListOf<String>()
 
-        // TODO: Add response body as text back into ContentsContainer
-        return responseBody
+        val candidates = Json.parseToJsonElement(rawResponse).jsonObject["candidates"]?.jsonArray ?: emptyList()
+        for (candidate in candidates) {
+            val parts = candidate.jsonObject["content"]?.jsonObject?.get("parts")?.jsonArray ?: emptyList()
+            for (part in parts) {
+                println(part.toString())
+                partsList.add(part.toString())
+            }
+        }
+
+        // Add the "PARTS" into chat history
+        partsList.forEach {
+            addPart(Part(it), Role.MODEL)
+        }
+
+        return partsList.joinToString("\n")
 
     }
 
