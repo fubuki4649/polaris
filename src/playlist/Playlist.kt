@@ -1,10 +1,14 @@
 package playlist
 
-import global.SongMetadataGetter
-import kotlinx.serialization.json.Json
+import io.ktor.client.*
+import io.ktor.client.request.*
+import io.ktor.client.statement.*
+import kotlinx.coroutines.runBlocking
+import metadata.LLMMetadataGetter
+import metadata.getMetadataFromApple
+import java.io.File
 import java.util.logging.Level
 import java.util.logging.Logger
-import kotlin.io.path.*
 import java.util.regex.Pattern
 
 class Playlist(private val playlistLink: String, private val workPath: String = "${System.getProperty("user.home")}/.cache/polaris", overwrite: Boolean = false) {
@@ -16,7 +20,7 @@ class Playlist(private val playlistLink: String, private val workPath: String = 
     init {
 
         // Handle non-empty work path
-        if(Path(workPath).exists()) {
+        if(File(workPath).exists()) {
 
             if(!overwrite) {
                 println("$workPath already exists. Overwrite? (Y/n)")
@@ -24,8 +28,7 @@ class Playlist(private val playlistLink: String, private val workPath: String = 
             }
 
             println("Deleting non-empty directory $workPath")
-            @OptIn(ExperimentalPathApi::class)
-            Path(workPath).deleteRecursively()
+            File(workPath).deleteRecursively()
 
         }
 
@@ -39,7 +42,6 @@ class Playlist(private val playlistLink: String, private val workPath: String = 
     }
 
     /// Download playlist songs from YouTube
-    @OptIn(ExperimentalPathApi::class)
     fun download(verbose: Boolean = true) {
 
         println("Downloading contents from $playlistLink")
@@ -54,7 +56,7 @@ class Playlist(private val playlistLink: String, private val workPath: String = 
             .waitFor()
 
         // Populate `tracks: MutableList<Track>`
-        val audioPath = Path("$workPath/audio")
+        val audioPath = File("$workPath/audio")
         audioPath.walk().forEach {
             tracks.add(Track(it.toString()))
         }
@@ -63,39 +65,46 @@ class Playlist(private val playlistLink: String, private val workPath: String = 
 
     }
 
+    private fun downloadArtworks(verbose: Boolean = true) {
+
+        val albumArtPath = File("$workPath/albumart")
+        if(!albumArtPath.exists()) albumArtPath.mkdirs()
+
+        tracks.forEach { track ->
+            // Download album artwork to $workPath/albumart/$ARTIST-$TRACKNAME.jpg
+            runBlocking {
+                val client = HttpClient()
+                val imageData = HttpClient().get(track.metadata.albumArt).readRawBytes()
+                File(albumArtPath, "${track.metadata.artists}-${track.metadata.title}.jpg").writeBytes(imageData)
+                client.close()
+            }
+            // Cache the path for the album artwork
+            track.albumArtPath = "$workPath/albumart/${track.metadata.artists}-${track.metadata.title}.jpg"
+        }
+
+    }
+
     fun populateMetadata(verbose: Boolean = true) {
 
         println("Getting metadata for $playlistLink from ${global.languageModel}")
 
-        // Send an LLM query and get the response as json
-        val jsonRawResponse = SongMetadataGetter.getMetadata(tracks.map {
-            it.videoName
-        })
-
-        println("Parsing JSON response from ${global.languageModel}${if(verbose)":" else ""}")
-
-        // Isolate only the json content from the LLM response
-        val jsonData = extractJsonContent(jsonRawResponse).replace("\\n", "\n").replace("\\\"", "\"")
-
-        // Log LLM response
-        if(verbose) {
-            if(jsonData.isNotBlank()) println(jsonData) else println(jsonRawResponse)
+        // Get metadata for each track
+        LLMMetadataGetter.getMetadataFromLLM(tracks.map { it.videoName }).mapIndexed { index, metadata ->
+            tracks[index].metadata = getMetadataFromApple(metadata)
         }
 
-        // Deserialize json and set metadata for each track
-        Json.decodeFromString<List<Track.Metadata>>(jsonData).mapIndexed { index, metadata ->
-            tracks[index].metadata = metadata
-        }
+        println("Downloading album artworks")
+
+        // Get album art for each track
+        downloadArtworks(verbose)
 
         println("Writing metadata to file")
 
-        // Set logging for jaudiotagger
+        // Set logging level and write metadata to file
         Logger.getLogger("org.jaudiotagger").level = if(verbose) Level.CONFIG else Level.OFF
-
-        // Write Metadata to file
         tracks.forEach { it.writeMetadata() }
 
-        println("Finished populating metadata")
+        println("Finished setting metadata")
 
     }
 

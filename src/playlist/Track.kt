@@ -3,6 +3,7 @@ package playlist
 import kotlinx.serialization.Serializable
 import org.jaudiotagger.audio.AudioFileIO
 import org.jaudiotagger.tag.FieldKey
+import org.jaudiotagger.tag.images.ArtworkFactory
 import org.jaudiotagger.tag.mp4.Mp4Tag
 import java.io.File
 
@@ -10,7 +11,7 @@ class Track(val path: String) {
 
     var videoName: String
     var channelName: String
-    var albumCoverPath: String? = null
+    var albumArtPath: String = ""
     lateinit var metadata: Metadata
 
     init {
@@ -23,6 +24,10 @@ class Track(val path: String) {
     data class Metadata(
         val title: String = "",
         val artists: List<String> = emptyList(),
+        val album: String = "",
+        val trackNumber: Int = 1,
+        val trackTotal: Int = 1,
+        val albumArt: String = "",
         val isCover: Boolean = false,
     )
 
@@ -32,12 +37,22 @@ class Track(val path: String) {
         val audioFile = AudioFileIO.read(File(path))
         val tag = audioFile.tagOrCreateDefault as Mp4Tag
 
-        // Set appropriate metadata fields
+        // Set appropriate metadata text fields
         tag.setField(FieldKey.TITLE, metadata.title)
+        tag.setField(FieldKey.ALBUM, metadata.album)
+        tag.setField(FieldKey.TRACK, metadata.trackNumber.toString())
+        tag.setField(FieldKey.TRACK_TOTAL, metadata.trackTotal.toString())
         when(metadata.artists.size) {
             0 -> {}
             1 -> tag.setField(FieldKey.ARTIST, metadata.artists[0])
             else -> tag.setField(FieldKey.ARTISTS, metadata.artists.joinToString("; "))
+        }
+
+        // Write album artwork
+        val artwork = File(albumArtPath)
+        if(artwork.exists()) {
+            tag.deleteArtworkField()
+            tag.setField(ArtworkFactory.createArtworkFromFile(artwork))
         }
 
         audioFile.commit()
