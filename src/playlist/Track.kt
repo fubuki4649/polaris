@@ -33,6 +33,8 @@ class Track(val path: String) {
 
     fun writeMetadata() {
 
+        println("Writing metadata to $path")
+
         if(!File(path).exists()) println("file doesnt exist")
         val audioFile = AudioFileIO.read(File(path))
         val tag = audioFile.tagOrCreateDefault as Mp4Tag

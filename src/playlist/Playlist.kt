@@ -10,6 +10,8 @@ import java.io.File
 import java.util.logging.Level
 import java.util.logging.Logger
 import java.util.regex.Pattern
+import kotlin.io.path.Path
+import kotlin.io.path.walk
 
 class Playlist(private val playlistLink: String, private val workPath: String = "${System.getProperty("user.home")}/.cache/polaris", overwrite: Boolean = false) {
 
@@ -57,7 +59,7 @@ class Playlist(private val playlistLink: String, private val workPath: String = 
 
         // Populate `tracks: MutableList<Track>`
         val audioPath = File("$workPath/audio")
-        audioPath.walk().forEach {
+        audioPath.walk().filter { it.isFile }.forEach {
             tracks.add(Track(it.toString()))
         }
 
