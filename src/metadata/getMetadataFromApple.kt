@@ -29,7 +29,7 @@ fun getMetadataFromApple(track: Track.Metadata): Track.Metadata {
     println(response)
     println("meow")
 
-    val jsonResponse = Json.parseToJsonElement(response).jsonObject["results"]!!.jsonArray.first().jsonObject
+    val jsonResponse = Json.parseToJsonElement(response).jsonObject["results"]!!.jsonArray.first()
 
     val album = jsonResponse.jsonObject["collectionName"]?.jsonPrimitive?.content ?: track.title
     val trackNumber = jsonResponse.jsonObject["trackNumber"]?.jsonPrimitive?.int ?: 1
