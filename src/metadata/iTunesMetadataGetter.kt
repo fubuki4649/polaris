@@ -1,5 +1,6 @@
 package metadata
 
+import global.getValue
 import io.ktor.client.*
 import io.ktor.client.request.*
 import io.ktor.client.statement.*
@@ -22,18 +23,6 @@ class iTunesMetadataGetter {
 
     companion object {
 
-        fun Map<String, JsonElement>.getString(key: String): String? {
-            return this[key]?.jsonPrimitive?.content
-        }
-
-        private fun Map<String, JsonElement>.getLong(key: String): Long? {
-            return this[key]?.jsonPrimitive?.long
-        }
-
-        private fun Map<String, JsonElement>.getInt(key: String): Int? {
-            return this[key]?.jsonPrimitive?.int
-        }
-
         /// Returns a new Track.Metadata object with updated metadata
         fun getMetadataFromApple(track: Track.Metadata): Track.Metadata {
 
@@ -44,18 +33,18 @@ class iTunesMetadataGetter {
             candidates.forEach { id ->
 
                 val songData = lookupId(id, iTunesObjectType.SONG)
-                val albumData = lookupId(songData.getLong("collectionId") ?: return@forEach, iTunesObjectType.ALBUM)
+                val albumData = lookupId(songData.getValue("collectionId") ?: return@forEach, iTunesObjectType.ALBUM)
 
                 // Verify that the song and album are from the same artist, this should filter out non-official releases
-                val songArtist = songData.getString("artistName") ?: return@forEach
-                val albumArtist = albumData.getString("artistName") ?: return@forEach
+                val songArtist: String = songData.getValue("artistName") ?: return@forEach
+                val albumArtist: String = albumData.getValue("artistName") ?: return@forEach
                 if (!(songArtist in albumArtist || albumArtist in songArtist)) return@forEach
 
                 return track.copy(
-                    album = songData.getString("collectionName") ?: track.album,
-                    trackNumber = songData.getInt("trackNumber") ?: 1,
-                    trackTotal = songData.getInt("trackCount") ?: 1,
-                    albumArt = songData.getString("artworkUrl100")?.replace("100", "1400") ?: ""
+                    album = songData.getValue("collectionName") ?: track.album,
+                    trackNumber = songData.getValue("trackNumber") ?: 1,
+                    trackTotal = songData.getValue("trackCount") ?: 1,
+                    albumArt = songData.getValue<String>("artworkUrl100")?.replace("100", "1400") ?: ""
                 )
 
             }
@@ -88,8 +77,8 @@ class iTunesMetadataGetter {
             val suggestions = Json.parseToJsonElement(response).jsonObject["results"]!!.jsonObject["suggestions"]!!.jsonArray
 
             // Extract IDs from JSON
-            val idList = suggestions.filter { (it.jsonObject["kind"]?.jsonPrimitive?.content ?: "") == "topResults" }
-                .map { (it.jsonObject["content"]?.jsonObject?.get("id")?.jsonPrimitive?.long ?: 0) }
+            val idList: List<Long> = suggestions.filter { (it.jsonObject.getValue("kind") ?: "") == "topResults" }
+                .map { (it.jsonObject["content"]?.jsonObject?.getValue("id") ?: 0) }
 
 
             println("Song ID matches for $query : $idList")
