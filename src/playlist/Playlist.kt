@@ -5,13 +5,11 @@ import io.ktor.client.request.*
 import io.ktor.client.statement.*
 import kotlinx.coroutines.runBlocking
 import metadata.LLMMetadataGetter
-import metadata.getMetadataFromApple
+import metadata.iTunesMetadataGetter
 import java.io.File
 import java.util.logging.Level
 import java.util.logging.Logger
 import java.util.regex.Pattern
-import kotlin.io.path.Path
-import kotlin.io.path.walk
 
 class Playlist(private val playlistLink: String, private val workPath: String = "${System.getProperty("user.home")}/.cache/polaris", overwrite: Boolean = false) {
 
@@ -92,7 +90,7 @@ class Playlist(private val playlistLink: String, private val workPath: String = 
 
         // Get metadata for each track
         LLMMetadataGetter.getMetadataFromLLM(tracks.map { it.videoName }).mapIndexed { index, metadata ->
-            tracks[index].metadata = getMetadataFromApple(metadata)
+            tracks[index].metadata = iTunesMetadataGetter.getMetadataFromApple(metadata)
         }
 
         println("Downloading album artworks")

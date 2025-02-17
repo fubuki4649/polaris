@@ -5,10 +5,11 @@ import io.ktor.client.request.*
 import io.ktor.client.statement.*
 import kotlinx.coroutines.runBlocking
 import kotlinx.serialization.json.*
-
+import playlist.Track
 
 @Suppress("ClassName")
 class iTunesMetadataGetter {
+
 
     enum class iTunesObjectType(private val str: String) {
         SONG("song"),
@@ -21,7 +22,49 @@ class iTunesMetadataGetter {
 
     companion object {
 
-        fun searchSong(query: String): List<Long> {
+        fun Map<String, JsonElement>.getString(key: String): String? {
+            return this[key]?.jsonPrimitive?.content
+        }
+
+        private fun Map<String, JsonElement>.getLong(key: String): Long? {
+            return this[key]?.jsonPrimitive?.long
+        }
+
+        private fun Map<String, JsonElement>.getInt(key: String): Int? {
+            return this[key]?.jsonPrimitive?.int
+        }
+
+        /// Returns a new Track.Metadata object with updated metadata
+        fun getMetadataFromApple(track: Track.Metadata): Track.Metadata {
+
+            // Search Apple Music for matching titles
+            val candidates = querySongTitle(track.title)
+
+            // Find an appropriate match
+            candidates.forEach { id ->
+
+                val songData = lookupId(id, iTunesObjectType.SONG)
+                val albumData = lookupId(songData.getLong("collectionId") ?: return@forEach, iTunesObjectType.ALBUM)
+
+                // Verify that the song and album are from the same artist, this should filter out non-official releases
+                val songArtist = songData.getString("artistName") ?: return@forEach
+                val albumArtist = albumData.getString("artistName") ?: return@forEach
+                if (!(songArtist in albumArtist || albumArtist in songArtist)) return@forEach
+
+                return track.copy(
+                    album = songData.getString("collectionName") ?: track.album,
+                    trackNumber = songData.getInt("trackNumber") ?: 1,
+                    trackTotal = songData.getInt("trackCount") ?: 1,
+                    albumArt = songData.getString("artworkUrl100")?.replace("100", "1400") ?: ""
+                )
+
+            }
+
+            return track
+
+        }
+
+        private fun querySongTitle(query: String): List<Long> {
 
             val itunesUrl = "https://amp-api-edge.music.apple.com/v1/catalog/jp/search/suggestions?art%5Burl%5D=f&fields%5Balbums%5D=artwork%2Cname%2CplayParams%2Curl%2CartistName&fields%5Bartists%5D=url%2Cname%2Cartwork&format%5Bresources%5D=map&kinds=terms%2CtopResults&l=ja&limit%5Bresults%3Aterms%5D=5&limit%5Bresults%3AtopResults%5D=10&omit%5Bresource%5D=autos&platform=web&term=${query.replace(" ", "%20")}&types=activities%2Calbums%2Cartists%2Ceditorial-items%2Cmusic-movies%2Cmusic-videos%2Cplaylists%2Crecord-labels%2Csongs%2Cstations%2Ctv-episodes&with=naturalLanguage"
 
@@ -55,7 +98,7 @@ class iTunesMetadataGetter {
 
         }
 
-        fun lookupId(id: Long, type: iTunesObjectType): Map<String, JsonElement> {
+        private fun lookupId(id: Long, type: iTunesObjectType): Map<String, JsonElement> {
 
             val itunesUrl = "https://itunes.apple.com/lookup?id=$id&entity=$type&country=JP"
 

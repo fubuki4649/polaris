@@ -1,6 +1,3 @@
-import metadata.iTunesMetadataGetter
-import metadata.iTunesMetadataGetter.Companion.lookupId
-import metadata.iTunesMetadataGetter.Companion.searchSong
 import picocli.CommandLine
 import picocli.CommandLine.*
 import playlist.Playlist
@@ -46,9 +43,6 @@ class Polaris: Callable<Int> {
 
 fun main(args: Array<String>) {
 
-    // exitProcess(CommandLine(Polaris()).execute(*args))
-
-    searchSong("少女レイ")
-    lookupId(searchSong("少女レイ")[1], iTunesMetadataGetter.iTunesObjectType.SONG)
+    exitProcess(CommandLine(Polaris()).execute(*args))
 
 }
