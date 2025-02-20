@@ -6,11 +6,14 @@ import io.ktor.client.request.*
 import io.ktor.client.statement.*
 import kotlinx.coroutines.runBlocking
 import kotlinx.serialization.json.*
+import org.slf4j.LoggerFactory
 import playlist.Track
+import java.util.*
+
+private val json = Json { prettyPrint = true }
 
 @Suppress("ClassName")
 class iTunesMetadataGetter {
-
 
     enum class iTunesObjectType(private val str: String) {
         SONG("song"),
@@ -23,8 +26,13 @@ class iTunesMetadataGetter {
 
     companion object {
 
+        private val logger = LoggerFactory.getLogger(LLMMetadataGetter::class.java)
+
+
         /// Returns a new Track.Metadata object with updated metadata
         fun getMetadataFromApple(track: Track.Metadata): Track.Metadata {
+
+            logger.debug("Getting detailed metadata from Apple for ${track.title}")
 
             // Search Apple Music for matching titles
             val candidates = querySongTitle(track.title)
@@ -40,14 +48,20 @@ class iTunesMetadataGetter {
                 val albumArtist: String = albumData.getValue("artistName") ?: return@forEach
                 if (!(songArtist in albumArtist || albumArtist in songArtist)) return@forEach
 
-                return track.copy(
+                val details = track.copy(
                     album = songData.getValue("collectionName") ?: track.album,
                     trackNumber = songData.getValue("trackNumber") ?: 1,
                     trackTotal = songData.getValue("trackCount") ?: 1,
                     albumArt = songData.getValue<String>("artworkUrl100")?.replace("100", "1400") ?: ""
                 )
 
+                logger.debug("Selected iTunes ID $id")
+                logger.debug(details.toString())
+                return details
+
             }
+
+            logger.warn("No detailed metadata found for ${track.title}")
 
             return track
 
@@ -81,7 +95,8 @@ class iTunesMetadataGetter {
                 .map { (it.jsonObject["content"]?.jsonObject?.getValue("id") ?: 0) }
 
 
-            println("Song ID matches for $query : $idList")
+            logger.trace("Apple Music search request for query: $query")
+            logger.trace(idList.toString())
 
             return idList
 
@@ -97,6 +112,11 @@ class iTunesMetadataGetter {
                 response = client.get(itunesUrl).bodyAsText()
                 client.close()
             }
+
+            val jsonResponse = Json.parseToJsonElement(response).jsonObject["results"]!!.jsonArray.first().jsonObject
+
+            logger.trace("iTunes lookup request for entity ID $id type ${type.toString() .uppercase(Locale.getDefault())}")
+            logger.trace(json.encodeToString(JsonObject.serializer(), jsonResponse))
 
             return Json.parseToJsonElement(response).jsonObject["results"]!!.jsonArray.first().jsonObject
 

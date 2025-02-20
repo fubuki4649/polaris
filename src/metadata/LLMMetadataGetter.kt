@@ -3,6 +3,7 @@ package metadata
 import global.languageModel
 import kotlinx.coroutines.runBlocking
 import kotlinx.serialization.json.Json
+import org.slf4j.LoggerFactory
 import playlist.Track
 import java.util.regex.Pattern
 import kotlin.reflect.full.createInstance
@@ -10,6 +11,8 @@ import kotlin.reflect.full.createInstance
 class LLMMetadataGetter {
 
     companion object {
+
+        private val logger = LoggerFactory.getLogger(LLMMetadataGetter::class.java)
 
         private val llm = languageModel.modelType.createInstance()
         private val sysPrompt = languageModel.sysPrompt
@@ -50,8 +53,11 @@ class LLMMetadataGetter {
             // Isolate only the json content from the LLM response
             val jsonData = extractJsonContent(rawResponse).replace("\\n", "\n").replace("\\\"", "\"")
 
+            val deserialized = Json.decodeFromString<List<Track.Metadata>>(jsonData)
+            logger.debug(deserialized.toString())
+
             // Deserialize json and return result
-            return Json.decodeFromString<List<Track.Metadata>>(jsonData)
+            return deserialized
 
         }
 

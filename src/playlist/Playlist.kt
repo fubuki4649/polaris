@@ -6,6 +6,7 @@ import io.ktor.client.statement.*
 import kotlinx.coroutines.runBlocking
 import metadata.LLMMetadataGetter
 import metadata.iTunesMetadataGetter
+import org.slf4j.LoggerFactory
 import java.io.File
 import java.util.logging.Level
 import java.util.logging.Logger
@@ -17,17 +18,20 @@ class Playlist(private val playlistLink: String, private val workPath: String = 
 
     private val tracks: MutableList<Track> = mutableListOf()
 
+    private val logger = LoggerFactory.getLogger(Playlist::class.java)
+
+
     init {
 
         // Handle non-empty work path
         if(File(workPath).exists()) {
 
             if(!overwrite) {
-                println("$workPath already exists. Overwrite? (Y/n)")
+                logger.warn("$workPath already exists. Overwrite? (Y/n)")
                 if((readlnOrNull()?.getOrNull(0)?.lowercaseChar() ?: 'y') == 'n') throw Exception("Directory already exists.")
             }
 
-            println("Deleting non-empty directory $workPath")
+            logger.info("Deleting non-empty directory $workPath")
             File(workPath).deleteRecursively()
 
         }
@@ -44,8 +48,8 @@ class Playlist(private val playlistLink: String, private val workPath: String = 
     /// Download playlist songs from YouTube
     fun download(verbose: Boolean = true) {
 
-        println("Downloading contents from $playlistLink")
-        println("Any unavailable tracks will be skipped, use --verbose to see more")
+        logger.info("Starting download from playlist $playlistLink")
+        logger.info("Any unavailable tracks will be skipped, use --verbose to see more")
 
         // Run yt-dlp
         val destination = if(verbose) ProcessBuilder.Redirect.INHERIT else ProcessBuilder.Redirect.DISCARD
@@ -61,7 +65,7 @@ class Playlist(private val playlistLink: String, private val workPath: String = 
             tracks.add(Track(it.toString()))
         }
 
-        println("Finished downloading $playlistLink")
+        logger.info("Finished downloading $playlistLink")
 
     }
 
@@ -71,6 +75,9 @@ class Playlist(private val playlistLink: String, private val workPath: String = 
         if(!albumArtPath.exists()) albumArtPath.mkdirs()
 
         tracks.forEach { track ->
+
+            logger.info("Downloading for ${track.metadata.title} by ${track.metadata.artists}")
+
             // Download album artwork to $workPath/albumart/$ARTIST-$TRACKNAME.jpg
             runBlocking {
                 val client = HttpClient()
@@ -78,33 +85,37 @@ class Playlist(private val playlistLink: String, private val workPath: String = 
                 File(albumArtPath, "${track.metadata.artists}-${track.metadata.title}.jpg").writeBytes(imageData)
                 client.close()
             }
+
             // Cache the path for the album artwork
             track.albumArtPath = "$workPath/albumart/${track.metadata.artists}-${track.metadata.title}.jpg"
+
+            logger.info("Finished downloading artwork for ${track.metadata.title} by ${track.metadata.artists}")
+
         }
 
     }
 
     fun populateMetadata(verbose: Boolean = true) {
 
-        println("Getting metadata for $playlistLink from ${global.languageModel}")
+        logger.info("Getting metadata for $playlistLink from ${global.languageModel}")
 
         // Get metadata for each track
         LLMMetadataGetter.getMetadataFromLLM(tracks.map { it.videoName }).mapIndexed { index, metadata ->
             tracks[index].metadata = iTunesMetadataGetter.getMetadataFromApple(metadata)
         }
 
-        println("Downloading album artworks")
+        logger.info("Downloading album artworks")
 
         // Get album art for each track
         downloadArtworks(verbose)
 
-        println("Writing metadata to file")
+        logger.info("Writing metadata")
 
         // Set logging level and write metadata to file
         Logger.getLogger("org.jaudiotagger").level = if(verbose) Level.CONFIG else Level.OFF
         tracks.forEach { it.writeMetadata() }
 
-        println("Finished setting metadata")
+        logger.info("Finished writing metadata")
 
     }
 

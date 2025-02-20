@@ -5,6 +5,7 @@ import org.jaudiotagger.audio.AudioFileIO
 import org.jaudiotagger.tag.FieldKey
 import org.jaudiotagger.tag.images.ArtworkFactory
 import org.jaudiotagger.tag.mp4.Mp4Tag
+import org.slf4j.LoggerFactory
 import java.io.File
 
 class Track(val path: String) {
@@ -13,6 +14,8 @@ class Track(val path: String) {
     var channelName: String
     var albumArtPath: String = ""
     lateinit var metadata: Metadata
+
+    private val logger = LoggerFactory.getLogger(Track::class.java)
 
     init {
         val splitPath = path.split("<DELIMITER>")
@@ -33,9 +36,13 @@ class Track(val path: String) {
 
     fun writeMetadata() {
 
-        println("Writing metadata to $path")
+        logger.info("Writing metadata to $path")
 
-        if(!File(path).exists()) println("file doesnt exist")
+        if(!File(path).exists()) {
+            logger.error("File does not exist: $path")
+            return
+        }
+
         val audioFile = AudioFileIO.read(File(path))
         val tag = audioFile.tagOrCreateDefault as Mp4Tag
 
@@ -58,6 +65,8 @@ class Track(val path: String) {
         }
 
         audioFile.commit()
+
+        logger.info("Successfully written metadata for $path")
 
     }
 
