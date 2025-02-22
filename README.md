@@ -8,9 +8,13 @@
 
 </div>
 
+### Notice
+
+Make sure to clone with `--recursive` to ensure all submodules are cloned properly
+
 ### What It Does
 
-It takes a youtube playlist link, downloads the tracks, and populates the metadata and album art using Google Gemini and the iTunes Public API
+It takes a YouTube playlist link, downloads the tracks, and populates the metadata and album art using Google Gemini and the iTunes Public API
 
 
 ### Dependencies
