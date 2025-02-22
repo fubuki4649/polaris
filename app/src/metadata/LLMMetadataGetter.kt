@@ -6,7 +6,6 @@ import kotlinx.serialization.json.Json
 import org.slf4j.LoggerFactory
 import playlist.Track
 import java.util.regex.Pattern
-import kotlin.reflect.full.createInstance
 
 class LLMMetadataGetter {
 
@@ -14,7 +13,7 @@ class LLMMetadataGetter {
 
         private val logger = LoggerFactory.getLogger(LLMMetadataGetter::class.java)
 
-        private val llm = languageModel.modelType.createInstance()
+        private val llm = languageModel.createInstance()
         private val sysPrompt = languageModel.sysPrompt
         private val userPromptPrefix = languageModel.userPromptPrefix
 

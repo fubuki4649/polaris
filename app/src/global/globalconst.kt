@@ -1,14 +1,16 @@
 package global
 
 import llm.gemini.Gemini
-import kotlin.reflect.KClass
+
 
 enum class LanguageModel(
-    val modelType: KClass<out llm.LanguageModel>,
+    val createInstance: () -> llm.LanguageModel,
     val sysPrompt: String,
     val userPromptPrefix: String,
 ) {
-    GEMINI(Gemini::class, geminiSystemPrompt, geminiUserPromptPrefix),
+    GEMINI({
+        Gemini(geminiApiKey, geminiApiLink)
+    }, geminiSystemPrompt, geminiUserPromptPrefix),
 }
 
 // Indicate which LLM to use
