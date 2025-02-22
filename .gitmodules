@@ -1,0 +1,3 @@
+[submodule "sorame"]
+	path = sorame
+	url = https://github.com/fubuki4649/sorame.git
